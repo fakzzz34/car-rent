@@ -1,27 +1,13 @@
+import 'package:car_rent/presentation/bloc/car_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/models/car.dart';
+import '../bloc/car_event.dart';
+import '../bloc/car_state.dart';
 import '../widgets/car_card.dart';
 
 class CarListPage extends StatelessWidget {
-  CarListPage({super.key});
-
-  final List<Car> cars = [
-    Car(
-      model: 'Fortuner GR',
-      distance: 200,
-      fuelCapacity: 40,
-      pricePerHour: 200,
-    ),
-    Car(
-      model: 'Pajero Sport',
-      distance: 300,
-      fuelCapacity: 50,
-      pricePerHour: 250,
-    ),
-    Car(model: 'Camry', distance: 400, fuelCapacity: 60, pricePerHour: 300),
-    Car(model: 'Corolla', distance: 500, fuelCapacity: 70, pricePerHour: 350),
-  ];
+  const CarListPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +17,29 @@ class CarListPage extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: Center(
-        child: ListView.builder(
-          itemCount: cars.length,
-          itemBuilder: (context, index) {
-            final car = cars[index];
-            return CarCard(car: car);
-          },
-        ),
+      body: BlocBuilder<CarBloc, CarState>(
+        builder: (context, state) {
+          if (state is CarsLoading) {
+            return Center(child: CircularProgressIndicator());
+          } else if (state is CarsLoaded) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<CarBloc>().add(LoadCars());
+              },
+              child: ListView.builder(
+                itemCount: state.cars.length,
+                itemBuilder: (context, index) {
+                  final car = state.cars[index];
+                  return CarCard(car: car);
+                },
+              ),
+            );
+          } else if (state is CarsError) {
+            return Center(child: Text('Error : ${state.message}'));
+          } else {
+            return SizedBox();
+          }
+        },
       ),
     );
   }
